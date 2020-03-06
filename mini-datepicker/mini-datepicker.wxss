@@ -1,0 +1,78 @@
+.mini-datepicker .header{
+  display: flex;
+  justify-content: space-between;
+  height: 84rpx;
+  line-height: 84rpx;
+  color: #000;
+  font-size: 36rpx;
+}
+.mini-datepicker .header .arrow{
+  width: 14.285%;
+  text-align: center;
+  color:rgba(0,0,0,.5);
+}
+.mini-datepicker .week-bar{
+  display: flex;
+  height: 68rpx;
+  line-height: 68rpx;
+  padding: 8rpx 0;
+  background: #F5F9FF;
+  font-size: 28rpx;
+  color:#151E26;
+}
+.mini-datepicker .week-bar .week-item{
+  width: 14.285%;
+  text-align: center;
+}
+.mini-datepicker .body .day-item{
+  display: inline-block;
+  width: 14.285%;
+  padding:20rpx 0;
+  text-align: center;
+}
+.mini-datepicker .body .day-item .number{
+  box-sizing: border-box;
+  display: inline-block;
+  width: 60rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  border:1px solid transparent;
+  border-radius: 50%;
+  color: #333;  
+  font-size: 32rpx;
+}
+.mini-datepicker .body .day-item .number.today{
+  border:1px solid #3D8AFF;
+  color:#3D8AFF;
+}
+.mini-datepicker .body .day-item .number.active-day{
+  background: #3D8AFF;
+  color:#fff;
+}
+.mini-datepicker .body .day-item .number.disabled-day{
+  color:#d0d2d4;
+}
+.mini-datepicker .footer{
+  display: flex;
+  justify-content: center;
+  height: 54rpx;
+  color:#adb1b3;
+  font-size:24rpx;
+}
+.mini-datepicker .footer .arrow{
+  width:22rpx;
+  height: 34rpx;
+}
+
+.arrow-left{
+  transform-origin:50% 50%;
+  transform: rotate(180deg)
+}
+.arrow-down{
+  transform-origin:50% 50%;
+  transform: rotate(90deg)
+}
+.arrow-up{
+  transform-origin:50% 50%;
+  transform: rotate(-90deg)
+}

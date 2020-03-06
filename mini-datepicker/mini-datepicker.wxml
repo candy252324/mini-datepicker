@@ -1,0 +1,26 @@
+<view class="mini-datepicker">
+    <view class="header">
+        <view class="arrow arrow-left" bindtap="toggleDate" data-type="pre">
+            >
+        </view>
+        <view>{{headerDate}}</view>
+        <view class="arrow" bindtap="toggleDate" data-type="next">
+            >
+        </view>
+    </view>
+    <view class="week-bar">
+        <view class="week-item" wx:for="{{weeks}}" wx:key="index">{{item}}</view>
+    </view>
+    <view class="body">
+        <view class="day-item" wx:for="{{days}}" wx:key="index" bindtap="chooseDate" data-value="{{item}}">
+            <view
+                class="number {{item.date !== item.calDate && currentViewType!=='week'?'disabled-day':(item.dateStr===activeDateStr?'active-day':(item.dateStr===todayStr?'today':''))}}">
+                {{item.date}}
+            </view>
+        </view>
+    </view>
+    <view class="footer" bindtap="toggleMode">
+        <view class="arrow {{currentViewType==='month'?'arrow-up':'arrow-down'}}">></view>
+        <view> {{currentViewType==="month"?"收起":"更多"}} </view>
+    </view>
+</view>
