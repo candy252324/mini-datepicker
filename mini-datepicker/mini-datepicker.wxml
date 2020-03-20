@@ -11,7 +11,7 @@
     <view class="week-bar">
         <view class="week-item" wx:for="{{weeks}}" wx:key="index">{{item}}</view>
     </view>
-    <view class="body">
+    <view class="body" bindtouchstart="calendarTouchstart" bindtouchmove="calendarTouchmove">
         <view class="day-item" wx:for="{{days}}" wx:key="index" bindtap="chooseDate" data-value="{{item}}">
             <view
                 class="number {{item.date !== item.calDate && currentViewType!=='week'?'disabled-day':(item.dateStr===activeDateStr?'active-day':(item.dateStr===todayStr?'today':''))}}">

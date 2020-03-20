@@ -1,15 +1,22 @@
+import { debounce } from './utils/util';
+import { Slide } from './utils/slide'
+
+const slide = new Slide();
+/** 滑动事件锁 */
+let slideLock = false
+
 Component({
   options: {
     multipleSlots: true,
     addGlobalClass: true
   },
   properties: {
-    /** 默认日期 */
+    /** 默认选中的日期 */
     defaultDate: {
       type: String,
       value: "",
     },
-    /** 从周几开始 */
+    /** 今天 */
     today: {
       type: String,
       value: "monday",
@@ -24,6 +31,12 @@ Component({
       type: String,
       value: "week",  // "month" or "week"
     },
+    classIds: {
+      type: String
+    },
+    schoolId: {
+      type: String
+    },
   },
 
   data: {
@@ -32,61 +45,74 @@ Component({
     headerDate: "",
     weeks: [],
     days: [],
-    /** 被点击的日期, 格式：2020-3-5 */
+    /** 被点击的日期, 格式：2020/3/5 */
     activeDateStr: "",
-    /** 今天，格式：2020-3-5*/
-    todayStr: ""
+    /** 今天，格式：2020/3/5*/
+    todayStr: "",
+    gesture: {
+      startX: 0,
+      startY: 0
+    }
   },
   attached() {
-    let defaultviewType = this.data.defaultviewType || "month"
-    let weeks = this.getWeek(this.data.startDay === "monday")
+    let defaultviewType = this.properties.defaultviewType || "month"
+    let weeks = this.getWeek(this.properties.startDay === "monday")
     let days = defaultviewType === "month"
-      ? this.getMonthData(this.data.defaultDate)
-      : this.getWeekData(this.data.defaultDate)
+      ? this.getMonthData(this.properties.defaultDate)
+      : this.getWeekData(this.properties.defaultDate)
 
-    let defaultDateArr = this.formatDate(this.data.defaultDate).split("-")
-    let headerDate = defaultDateArr[0] + " 年 " + defaultDateArr[1] + " 月"
-    this.setData({
-      currentViewType: defaultviewType,
-      weeks,
-      days,
-      headerDate,
-      todayStr: this.formatDate(this.data.today),
-      activeDateStr: this.formatDate(this.data.defaultDate),
-    })
+      let defaultDateArr = this.formatDate(this.properties.defaultDate).split("/")
+      let headerDate = defaultDateArr[0] + " 年 " + defaultDateArr[1] + " 月"
+      this.setData({
+        currentViewType: defaultviewType,
+        weeks,
+        days,
+        headerDate,
+        todayStr: this.formatDate(this.properties.today),
+        activeDateStr: this.formatDate(this.properties.defaultDate),
+      })
+      this.chooseDate = debounce(this.chooseDate, 100);
+      this.toggleDate = debounce(this.toggleDate, 100);
   },
   methods: {
     /** 点击某个日期 */
     chooseDate(e) {
       const value = e.currentTarget.dataset.value
       const { year, month, date, calDate, dateStr } = value
-      if (date !== calDate && this.currentViewType === "month") return
+      // if (date !== calDate && this.data.currentViewType === "month") return
       /** 用户点击的日期 */
-      let activeDateStr = `${year}-${month}-${date}`
+      const activeDateStr = `${year}/${month}/${date}`
       if (this.data.currentViewType === "month") {
         this.setData({
           currentViewType: "week",
         })
+        const days = this.getWeekData(activeDateStr)
+        this.setData({
+          days,
+          activeDateStr,
+          headerDate: `${year} 年 ${month} 月`
+        })
+        this.triggerEvent('modeChange', {
+          viewType: this.data.currentViewType,
+        });
+      } else {
+        this.setData({
+          activeDateStr,
+          headerDate: `${year} 年 ${month} 月`
+        })
       }
-      let days = this.data.currentViewType === "month"
-        ? this.getMonthData(activeDateStr)
-        : this.getWeekData(activeDateStr)
-      this.setData({
-        days,
-        activeDateStr,
-        headerDate: `${year} 年 ${month} 月`
-      })
-      this.triggerEvent('chooseDate', {
+      this.triggerEvent('change', {
         viewType: this.data.currentViewType,
-        date: dateStr
+        dateStr,
       });
     },
+    /** 视图收起/展开 */
     toggleMode() {
       this.setData({
         currentViewType: this.data.currentViewType === "month" ? "week" : "month",
       })
       const activeDateStr = this.data.activeDateStr
-      const arr = activeDateStr.split("-")
+      const arr = activeDateStr.split("/")
       let days = this.data.currentViewType === "month"
         ? this.getMonthData(activeDateStr)
         : this.getWeekData(activeDateStr)
@@ -94,13 +120,21 @@ Component({
         days,
         headerDate: `${arr[0]} 年 ${arr[1]} 月`
       })
+      this.triggerEvent('modeChange', {
+        viewType: this.data.currentViewType,
+      });
     },
     /**
      * 左右切换
-     * @param {string}} type "pre" or "next"
+     * @param {string|object} e 内部调用该方法的话是个字符串("pre" or "next"),用户点击调用的话是个对象
      */
     toggleDate(e) {
-      const type = e.currentTarget.dataset.type
+      let type = ""
+      if (typeof (e) === "string") {
+        type = e
+      } else {
+        type = e.currentTarget.dataset.type
+      }
       let newActiveDateStr = ""
       if (this.data.currentViewType === "month") {
         newActiveDateStr = this.getActiveDateStrByMonth(this.data.activeDateStr, type)
@@ -108,7 +142,7 @@ Component({
         newActiveDateStr = this.getActiveDateStrByWeek(this.data.activeDateStr, type)
       }
 
-      let arr = newActiveDateStr.split("-")
+      let arr = newActiveDateStr.split("/")
       let days = this.data.currentViewType === "month"
         ? this.getMonthData(newActiveDateStr)
         : this.getWeekData(newActiveDateStr)
@@ -117,10 +151,32 @@ Component({
         headerDate: `${arr[0]} 年 ${arr[1]} 月`,
         days
       })
-      this.triggerEvent('chooseDate', {
+      this.triggerEvent('change', {
         viewType: this.data.currentViewType,
-        date: newActiveDateStr
+        dateStr: newActiveDateStr,
       });
+    },
+    calendarTouchstart(e) {
+      const t = e.touches[0];
+      const startX = t.clientX;
+      const startY = t.clientY;
+      slideLock = true;
+      this.setData({
+        'gesture.startX': startX,
+        'gesture.startY': startY
+      });
+    },
+    calendarTouchmove(e) {
+      const { gesture } = this.data;
+      if (!slideLock) return;
+      if (slide.isLeft(gesture, e.touches[0])) {
+        this.toggleDate("next")
+        slideLock = false;
+      }
+      if (slide.isRight(gesture, e.touches[0])) {
+        this.toggleDate("pre")
+        slideLock = false;
+      }
     },
     /**
      * 月视图下，左右切换时，获取新的高亮日期
@@ -128,7 +184,7 @@ Component({
      * @param {string} type "pre" or "next"
      */
     getActiveDateStrByMonth(curActiveDateStr, type) {
-      const arr = curActiveDateStr.split("-")
+      const arr = curActiveDateStr.split("/")
       const year = +arr[0]
       const month = +arr[1]
       const date = +arr[2]
@@ -153,7 +209,7 @@ Component({
           newDate = nextMonthLastDate
         }
       }
-      return `${newYear}-${newMonth}-${newDate}`
+      return `${newYear}/${newMonth}/${newDate}`
     },
     /**
      * 周视图下，左右切换时，获取新的高亮日期
@@ -161,7 +217,7 @@ Component({
      * @param {string} type "pre" or "next"
      */
     getActiveDateStrByWeek(curActiveDateStr, type) {
-      const arr = curActiveDateStr.split("-")
+      const arr = curActiveDateStr.split("/")
       const year = +arr[0]
       const month = +arr[1]
       const date = +arr[2]
@@ -190,7 +246,7 @@ Component({
           newDate = date + 7
         }
       }
-      return `${newYear}-${newMonth}-${newDate}`
+      return `${newYear}/${newMonth}/${newDate}`
     },
     /**
      * @param {boolean} isStartFromMonday 是否是从周一开始
@@ -205,7 +261,7 @@ Component({
     /** 获取周视图数据 */
     getWeekData(defaultDate) {
       /** 是否是从周一开始 */
-      const isStartFromMonday = this.data.startDay === "monday"
+      const isStartFromMonday = this.properties.startDay === "monday"
       if (!defaultDate) {
         defaultDate = new Date()
       }
@@ -258,7 +314,7 @@ Component({
           month: showMonth,
           date: showDate,
           calDate: date,
-          dateStr: `${showYear}-${showMonth}-${showDate}`
+          dateStr: `${showYear}/${showMonth}/${showDate}`
         })
       }
       return ret
@@ -269,7 +325,7 @@ Component({
      */
     getMonthData(activeDateStr) {
       /** 是否是从周一开始 */
-      const isStartFromMonday = this.data.startDay === "monday"
+      const isStartFromMonday = this.properties.startDay === "monday"
       if (!activeDateStr) {
         activeDateStr = new Date()
       }
@@ -330,14 +386,14 @@ Component({
           month: showMonth,
           date: showDate,
           calDate: date,
-          dateStr: `${showYear}-${showMonth}-${showDate}`
+          dateStr: `${showYear}/${showMonth}/${showDate}`
         })
       }
       return ret
     },
     formatDate(date) {
       let d = new Date(date || Date.now())
-      return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate()
+      return d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate()
     }
   }
 });
